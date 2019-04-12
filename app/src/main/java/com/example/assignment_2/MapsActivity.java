@@ -52,9 +52,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
       mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
          @Override
          public void onMapLongClick(LatLng latLng) {
-
-            //TODO: Why does the program always enter the if class even if I don't write something in editText?
-            if(location.getText().toString() != "")
+            if(location.getText().toString().matches("") == false)
             {
                String titleMarker = location.getText().toString();
                LatLng locationMarker = new LatLng(latLng.latitude, latLng.longitude);
