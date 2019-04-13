@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -29,6 +30,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
    private EditText location;
 
    private Button button;
+   private TextView textView;
    private short index;
 
    @Override
@@ -39,6 +41,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
       mapFragment.getMapAsync(this);
       location = findViewById(R.id.location);
       button = findViewById(R.id.button);
+      textView = findViewById(R.id.areaSpace);
       index = 0;
       button.setOnClickListener(new View.OnClickListener() {
          @Override
@@ -49,6 +52,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             while (size < index) {
                Set<String> set = prefs.getStringSet("Marker" + size, null);
+               //Source: https://www.javatpoint.com/difference-between-arraylist-and-vector
                List<String> list = new ArrayList<String>(set);
                String lat_lng = list.get(0);
                String lat_lng2 = list.get(1);
@@ -60,7 +64,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                String lng = "";
                double latDouble = -1d;
                double lngDouble = -1d;
-
+               // Source: http://www.java67.com/2018/05/java-string-chartat-example-how-to-get-first-last-character.html
                if(lat_lng.charAt(0) == 'l')
                {
                   indexOfBracket = lat_lng.indexOf("(");
@@ -72,6 +76,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                }
                else if(lat_lng2.charAt(0) == 'l')
                {
+                  //Source: https://www.geeksforgeeks.org/hashset-contains-method-in-java/
                   indexOfBracket = lat_lng2.indexOf("(");
                   indexOfComma = lat_lng2.indexOf(",");
                   indexOfBracket2 = lat_lng2.indexOf(")");
@@ -79,6 +84,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                   lat = lat_lng2.substring(indexOfBracket + 1, indexOfComma);
                   lng = lat_lng2.substring(indexOfComma + 1, indexOfBracket2);
                }
+
+               // Source: https://stackoverflow.com/questions/1253499/simple-calculations-for-working-with-lat-lon-km-distance
+               //         https://www.journaldev.com/18392/java-convert-string-to-double
                latDouble = Double.parseDouble(lat);
                double latitudeKilometer = latDouble * 110.574;
                //System.out.println("latInt: " + latDouble);
@@ -96,7 +104,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             if(size >= 3) {
                double result = 0;
-               //source:  https://www.mathopenref.com/coordpolygonarea.html
+               //Source:  https://stackoverflow.com/questions/1066589/iterate-through-a-hashmap
+               //         https://www.mathopenref.com/coordpolygonarea.html
+               //         https://www.geeksforgeeks.org/iterate-map-java/
+               //         https://stackoverflow.com/questions/31080272/java-iterator-get-next-without-incrementing
                Iterator it = points.entrySet().iterator();
                while (it.hasNext()) {
                   Map.Entry pair1 = (Map.Entry) it.next();
@@ -114,7 +125,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                if (result < 0) {
                   result = result * -1;
                }
-               System.out.println(result + "in km");
+               textView.setText(result + "km");
             }
          }
       });
@@ -152,6 +163,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                editor.putStringSet("Marker" + index, hashSet);
                editor.commit();
                ++index;
+               location.setText("");
             }
 
          }
