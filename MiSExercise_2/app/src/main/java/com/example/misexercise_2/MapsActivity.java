@@ -12,6 +12,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
+import android.widget.EditText;
 
 import com.example.misexercise_2.R;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -29,6 +30,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LocationManager locationManager;
     LocationListener locationListener;
     ArrayList<LatLng> allPoints;
+    private EditText textInput;
 
     public void centreMapOnLocation(Location location, String title) {
 
@@ -62,6 +64,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        textInput = (EditText)findViewById(R.id.textInput);
     }
 
     @Override
@@ -72,14 +75,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         allPoints = new ArrayList<LatLng>();
 
-        if (intent.getIntExtra("Place Number",0) == 0 ){
+        //if (intent.getIntExtra("Place Number",0) == 0 ){
             // Zoom into users location
             System.out.println("HERE2");
             locationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
             locationListener = new LocationListener() {
+            //centreMapOnLocation(location,"Your Location");
                 @Override
                 public void onLocationChanged(Location location) {
-                    centreMapOnLocation(location,"Your Location");
+                    //centreMapOnLocation(location,"Your Location");
                 }
 
                 @Override
@@ -106,7 +110,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},1);
             }
-        }
+        //}
 
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
@@ -114,7 +118,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 allPoints.add(point);
                 System.out.println(allPoints);
                 //mMap.clear();
-                mMap.addMarker(new MarkerOptions().position(point));
+                mMap.addMarker(new MarkerOptions().position(point)
+                .title(textInput.getText().toString()));
             }
         });
 
