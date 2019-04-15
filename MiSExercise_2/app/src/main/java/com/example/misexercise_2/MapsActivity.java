@@ -21,11 +21,14 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     LocationManager locationManager;
     LocationListener locationListener;
+    ArrayList<LatLng> allPoints;
 
     public void centreMapOnLocation(Location location, String title) {
 
@@ -66,6 +69,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         System.out.println("HERE");
         Intent intent = getIntent();
+
+        allPoints = new ArrayList<LatLng>();
+
         if (intent.getIntExtra("Place Number",0) == 0 ){
             // Zoom into users location
             System.out.println("HERE2");
@@ -101,6 +107,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},1);
             }
         }
+
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng point) {
+                allPoints.add(point);
+                System.out.println(allPoints);
+                //mMap.clear();
+                mMap.addMarker(new MarkerOptions().position(point));
+            }
+        });
 
 
     }
