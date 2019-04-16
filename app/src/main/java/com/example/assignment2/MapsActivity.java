@@ -1,4 +1,4 @@
-package com.example.exercise_2;
+package com.example.assignment2;
 
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
