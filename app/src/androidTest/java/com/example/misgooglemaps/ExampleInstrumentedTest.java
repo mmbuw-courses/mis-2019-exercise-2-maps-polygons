@@ -1,4 +1,4 @@
-package com.example.googlemapsmsi;
+package com.example.misgooglemaps;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("com.example.googlemapsmsi", appContext.getPackageName());
+        assertEquals("com.example.misgooglemaps", appContext.getPackageName());
     }
 }

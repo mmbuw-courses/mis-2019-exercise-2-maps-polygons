@@ -1,4 +1,4 @@
-package com.example.googlemapsmsi;
+package com.example.misgooglemaps;
 
 import org.junit.Test;
 
