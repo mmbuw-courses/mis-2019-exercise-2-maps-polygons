@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
+import android.icu.math.BigDecimal;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -14,12 +14,10 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
-import com.example.misexercise_2.R;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -28,12 +26,13 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.maps.android.SphericalUtil;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static android.text.TextUtils.split;
 
@@ -48,6 +47,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     SharedPreferences pref;
     String marker;
     Boolean polygonExist = false;
+    DecimalFormat df = new DecimalFormat("#.##");
     public void centreMapOnLocation(Location location, String title) {
 
         LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
@@ -159,6 +159,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(!polygonExist){
             double lat;
             double lon;
+            double centroidX = 0, centroidY = 0;
+            double areaComp = 0;
+            String ending;
+            List<LatLng> area = new ArrayList<>();
             Map<String, ?> keys = pref.getAll();
             PolygonOptions rectOptions = new PolygonOptions();
 
@@ -166,11 +170,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 lat = Double.parseDouble(split(entry.getValue().toString(), ",")[0]);
                 lon = Double.parseDouble(split(entry.getValue().toString(), ",")[1]);
                 rectOptions.add(new LatLng(lat, lon));
+                area.add(new LatLng(lat, lon));
+                centroidX += lat;
+                centroidY += lon;
+            }
+
+            areaComp = SphericalUtil.computeArea(area);
+            if(areaComp < 10000)
+            {
+                ending = " m2";
+            }
+            else if(areaComp >= 10000 && areaComp < 1000000)
+            {
+                ending = " ha";
+                areaComp /= 10000;
+            }
+            else{
+                ending = " km²";
+                areaComp /= 1e+6;
             }
 
             // Get back the mutable Polygon
             Polygon polygon = mMap.addPolygon(rectOptions.fillColor(0x556aa0f7).strokeWidth(1));
+            mMap.addMarker(new MarkerOptions().position(new LatLng(centroidX/keys.size(), centroidY/keys.size()))
+                    .title(Double.toString(round(areaComp, 2)) + ending));
             polygonExist = true;
+
         }
         else{
             mMap.clear();
@@ -178,5 +203,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             editor.commit();
             polygonExist = false;
         }
+    }
+    //round method from https://stackoverflow.com/questions/2808535/round-a-double-to-2-decimal-places
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        long factor = (long) Math.pow(10, places);
+        value = value * factor;
+        long tmp = Math.round(value);
+        return (double) tmp / factor;
     }
 }
