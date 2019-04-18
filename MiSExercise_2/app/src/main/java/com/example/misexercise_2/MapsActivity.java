@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -14,6 +15,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 
 import com.example.misexercise_2.R;
@@ -23,11 +26,16 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import static android.text.TextUtils.split;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -39,11 +47,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     SharedPreferences.Editor editor;
     SharedPreferences pref;
     String marker;
+    Boolean polygonExist = false;
     public void centreMapOnLocation(Location location, String title) {
 
         LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
         mMap.clear();
-        mMap.addMarker(new MarkerOptions().position(userLocation).title(title));
+        //mMap.addMarker(new MarkerOptions().position(userLocation).title(title));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 12));
 
     }
@@ -74,6 +83,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         textInput = (EditText)findViewById(R.id.textInput);
         pref = getApplicationContext().getSharedPreferences("Markers", MODE_PRIVATE);
         editor = pref.edit();
+        Button button= (Button) findViewById(R.id.buttonPolygon);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                addPolygon();
+            }
+        });
     }
 
     @Override
@@ -124,19 +140,43 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mMap.addMarker(new MarkerOptions().position(point)
                 .title(textInput.getText().toString()));
 
-                marker = Double.toString(point.latitude) + "|" + Double.toString(point.longitude);
+                marker = Double.toString(point.latitude) + "," + Double.toString(point.longitude) + "," + textInput.getText().toString();
                 editor.putString("marker" + Integer.toString(counter), marker);
                 editor.apply();
                 counter++;
 
-                Map<String,?> keys = pref.getAll();
-                System.out.println(keys.size());
-                for(Map.Entry<String,?> entry : keys.entrySet()){
-                    Log.d("map values",entry.getKey() + ": " + entry.getValue().toString());
-                }
+                //Map<String,?> keys = pref.getAll();
+                //System.out.println(keys.size());
+                //for(Map.Entry<String,?> entry : keys.entrySet()){
+                 //   Log.d("map values",entry.getKey() + ": " + entry.getValue().toString());
+                //}
+
             }
         });
+    }
 
+    public void addPolygon(){
+        if(!polygonExist){
+            double lat;
+            double lon;
+            Map<String, ?> keys = pref.getAll();
+            PolygonOptions rectOptions = new PolygonOptions();
 
+            for (Map.Entry<String, ?> entry : keys.entrySet()) {
+                lat = Double.parseDouble(split(entry.getValue().toString(), ",")[0]);
+                lon = Double.parseDouble(split(entry.getValue().toString(), ",")[1]);
+                rectOptions.add(new LatLng(lat, lon));
+            }
+
+            // Get back the mutable Polygon
+            Polygon polygon = mMap.addPolygon(rectOptions.fillColor(0x556aa0f7).strokeWidth(1));
+            polygonExist = true;
+        }
+        else{
+            mMap.clear();
+            editor.clear();
+            editor.commit();
+            polygonExist = false;
+        }
     }
 }
