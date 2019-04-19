@@ -1,18 +1,27 @@
 package com.awesometek.mis2;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+    private FusedLocationProviderClient fusedLocationClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +31,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
     }
 
 
@@ -36,11 +46,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
+        Toast.makeText(getApplicationContext(), "Entered onMapReady",
+                Toast.LENGTH_LONG).show();
+        if(mMap == null) {
+            mMap = googleMap;
+            Toast.makeText(getApplicationContext(), "Had to set mMap",
+                    Toast.LENGTH_LONG).show();
+        }
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: call
+            //    ActivityCompat#requestPermissions
+            return;
+        }
+        Toast.makeText(getApplicationContext(), "Permissions are okay...",
+                Toast.LENGTH_LONG).show();
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) {
+                            LatLng currLoc = new LatLng(location.getLatitude(),
+                                    location.getLongitude());
+                            mMap.addMarker(new MarkerOptions().position(currLoc).
+                                    title("Your Location"));
+                            mMap.moveCamera(CameraUpdateFactory.newLatLng(currLoc));
+                        }
+                    }
+                });
     }
 }
