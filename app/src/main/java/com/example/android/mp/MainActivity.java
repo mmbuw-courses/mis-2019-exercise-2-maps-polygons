@@ -2,7 +2,6 @@ package com.example.android.mp;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -11,64 +10,53 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.places.Places;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.maps.android.SphericalUtil;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener {
 
-    private static final String TAG = "MainActivity";
-    private static final int ERROR_DIALOG_REQUEST = 9001;
-    private static final String FINE_LOCATION = Manifest.permission.ACCESS_FINE_LOCATION;
-    private static final String COURSE_LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
+    private static final String COARSE_LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
     private Boolean mLocationPermissionGranted = false;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
     private GoogleMap mMap;
-
     protected LocationManager locationManager;
     public static final String MyPREFERENCES = "MapLocations";
     SharedPreferences sharedpreferences;
     private boolean polygonStarted = false;
-    private ArrayList<LatLng> polyList = new ArrayList<LatLng>();
+    private ArrayList<LatLng> polygonList = new ArrayList<LatLng>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //Set-up map
         //https://stackoverflow.com/a/27531283/6118088
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(MainActivity.this);
 
+        //Set-up sharedpreferences
         sharedpreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
 
+        //Set-up location
         //https://javapapers.com/android/get-current-location-in-android/
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        //Check/get location permission
         getLocationPermission();
         if(mLocationPermissionGranted) {
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 250, this);
@@ -77,8 +65,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
-        Toast.makeText(getApplicationContext(), "Map ready", Toast.LENGTH_SHORT).show();
+        
         mMap = googleMap;
 
         //https://www.programcreek.com/java-api-examples/index.php?api=com.google.android.gms.maps.GoogleMap.OnMapLongClickListener
@@ -86,21 +73,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onMapLongClick(LatLng position) {
 
-                SharedPreferences.Editor editor = sharedpreferences.edit();
-
+                //Add marker with input text as title
                 EditText nameInput = findViewById(R.id.TextInput);
                 String nameText = nameInput.getText().toString();
-
                 mMap.addMarker(new MarkerOptions().position(position).title(nameText));
 
+                //Add  marker's position to temp polygon data if a polygon is currently recorded
+                if(polygonStarted){
+                    polygonList.add(position);
+                }
+
+                //Add marker to sharedpreferences
+                SharedPreferences.Editor editor = sharedpreferences.edit();
                 //https://www.tutorialspoint.com/android/android_shared_preferences.htm
                 editor.putString("Name", nameText);
                 editor.putString("Location", position.toString());
                 editor.apply();
-
-                if(polygonStarted){
-                    polyList.add(position);
-                }
             }
         });
     }
@@ -108,57 +96,60 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onLocationChanged(Location location) {
 
+        //Add marker with device's location
         //https://stackoverflow.com/q/37682414/6118088
         LatLng position = new LatLng(location.getLatitude(),location.getLongitude());
         mMap.addMarker(new MarkerOptions().position(position).title("My current location"));
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(position));
     }
+    @Override
     public void onProviderDisabled(String provider) {}
+    @Override
     public void onProviderEnabled(String provider) {}
+    @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {}
 
-
     public void onPolygonButtonClick (View view){
-        Button polygonButton = findViewById(R.id.button);
 
+        //Toggle button
+        Button polygonButton = findViewById(R.id.button);
         polygonStarted = !polygonStarted;
-        if (polygonStarted) {
+        if (polygonStarted) {//Polygon recording started
             polygonButton.setText(R.string.end_polygon);
         }
-        else {
+        else {//Polygon recording stopped
             polygonButton.setText(R.string.start_polygon);
 
-            if(polyList.size() >= 3){
-                double area = 0;
+            //Polygon needs at least 3 vertices
+            if(polygonList.size() >= 3){
+                double area = .0, latitude = .0, longitude = .0;
 
+                //Set-up polygon
                 //https://developers.google.com/maps/documentation/android-sdk/shapes
                 PolygonOptions rectOptions = new PolygonOptions().fillColor(Color.argb(50, 0, 0, 0));
 
-
-                double latSum = .0;
-                double longSum = .0;
-
+                //Iterate trough temp polygon data to form polygon and calculate centroid
                 //https://stackoverflow.com/a/18444984/6118088
-                for(LatLng point : polyList){
+                for(LatLng point : polygonList){
                     rectOptions.add(point);
-                    latSum += point.latitude;
-                    longSum += point.longitude;
+                    latitude += point.latitude;
+                    longitude += point.longitude;
                 }
+                latitude = latitude / polygonList.size();
+                longitude = longitude / polygonList.size();
 
-                latSum = latSum / polyList.size();
-                longSum = longSum / polyList.size();
-
-                mMap.addPolygon(rectOptions);
-
+                //Calculate polygon's area
                 //https://developers.google.com/maps/documentation/android-sdk/utility/
-                area = SphericalUtil.computeArea(polyList);
+                area = SphericalUtil.computeArea(polygonList);
 
-                LatLng centroidPosition = new LatLng(latSum, longSum);
+                //Add polygon and centroid marker
+                LatLng centroidPosition = new LatLng(latitude, longitude);
                 String areaText = area < 1000000 ?  Math.floor(area * 100) / 100 + " m²" : Math.floor((area/1000000) * 100) / 100 + " km²";
                 mMap.addMarker(new MarkerOptions().position(centroidPosition).title(areaText));
+                mMap.addPolygon(rectOptions);
             }
 
-            polyList.clear();
+            //Remove temp data from previous polygon
+            polygonList.clear();
         }
     }
 
@@ -167,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Manifest.permission.ACCESS_COARSE_LOCATION};
 
             if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
-                    COURSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+                    COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
                 mLocationPermissionGranted = true;
             }else{
                 ActivityCompat.requestPermissions(this,
