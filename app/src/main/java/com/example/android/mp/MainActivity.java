@@ -14,6 +14,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -41,10 +43,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap mMap;
 
     protected LocationManager locationManager;
-    protected LocationListener locationListener;
-
-    public static final String MyPREFERENCES = "MapLocations" ;
+    public static final String MyPREFERENCES = "MapLocations";
     SharedPreferences sharedpreferences;
+    private boolean polygonStarted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,6 +103,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onProviderDisabled(String provider) {}
     public void onProviderEnabled(String provider) {}
     public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+
+    public void onPolygonButtonClick (View view){
+        Button polygonButton = findViewById(R.id.button);
+
+        polygonStarted = !polygonStarted;
+        if (polygonStarted)
+            polygonButton.setText(R.string.stop_polygon);
+        else
+            polygonButton.setText(R.string.start_polygon);
+    }
+
 
     public boolean isServiesOK() {
         Log.d(TAG, "isServicesOK: checking google services version");
