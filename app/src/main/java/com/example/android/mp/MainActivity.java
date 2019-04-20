@@ -2,6 +2,7 @@ package com.example.android.mp;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -16,7 +17,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -60,6 +60,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         getLocationPermission();
         if(mLocationPermissionGranted) {
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 250, this);
+            //Automatically open GPS settings if GPS deactivated
+            //https://stackoverflow.com/a/16262971/6118088 & https://www.android-examples.com/check-gps-location-services-is-enabled-or-not-in-android/
+            if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+                startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
         }
     }
 
