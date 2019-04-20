@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">MP</string>
     <string name="start_polygon">Start Polygon</string>
-    <string name="stop_polygon">Stop Polygon</string>
+    <string name="end_polygon">End Polygon</string>
 </resources>
