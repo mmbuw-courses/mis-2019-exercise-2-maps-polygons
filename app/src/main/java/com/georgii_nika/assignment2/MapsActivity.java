@@ -1,30 +1,45 @@
 package com.georgii_nika.assignment2;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+import java.util.ArrayList;
+import java.util.List;
+
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private boolean mLocationPermissionGranted;
+    private Marker myPositionMarker;
+    private boolean myLocationPermissionGranted;
+
+    private boolean isPolygonMode;
 
     private final int ACCESS_MAP = 100;
+
+    private Button polygonButton;
+    private EditText editText;
+
+    private MyPolygon currentPolygon;
+    private List<MyPolygon> polygons;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,41 +49,71 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        isPolygonMode = false;
+        polygons = new ArrayList<>();
 
+        polygonButton = findViewById(R.id.polygonButton);
+        editText = findViewById(R.id.editText);
+
+        polygonButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onPolygonButtonClick();
+            }
+        });
     }
 
-    private void setupLocationTracking() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+    private void setPolygonMode(boolean isPolygonMode) {
+        this.isPolygonMode = isPolygonMode;
+        polygonButton.setText(this.isPolygonMode ? R.string.polygon_end : R.string.polygon_start);
+    }
+
+    private void onPolygonButtonClick() {
+        if (!isPolygonMode) {
+            setPolygonMode(true);
+            currentPolygon = new MyPolygon(mMap);
+        } else {
+            try {
+                currentPolygon.closePolygon();
+                polygons.add(currentPolygon);
+                currentPolygon = null;
+                setPolygonMode(false);
+            } catch (MyPolygon.NotEnoughPointsException e) {
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+            } catch (MyPolygon.PolygonIsSelfIntersectingException e) {
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                currentPolygon.cleanup();
+                currentPolygon = null;
+                setPolygonMode(false);
+            }
+        }
+    }
+
+    private void setupLocationTracking() throws SecurityException {
+        if (!isLocationGranted()) {
             return;
         }
+
         mMap.setMyLocationEnabled(true);
 
         mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
             @Override
             public void onMyLocationChange(Location location) {
                 LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(latLng).title("It's Me!"));
+
+                if (myPositionMarker != null) {
+                    myPositionMarker.remove();
+                }
+
+                myPositionMarker = mMap.addMarker(new MarkerOptions().position(latLng).title("It's Me!"));
             }
         });
     }
 
     private void getLocationPermission() {
-        /*
-         * Request location permission, so that we can get the location of the
-         * device. The result of the permission request is handled by a callback,
-         * onRequestPermissionsResult.
-         */
         if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
-                android.Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            mLocationPermissionGranted = true;
+                android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            myLocationPermissionGranted = true;
         } else {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, ACCESS_MAP);
         }
@@ -76,26 +121,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        mLocationPermissionGranted = false;
+        myLocationPermissionGranted = false;
         switch (requestCode) {
             case ACCESS_MAP: {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    mLocationPermissionGranted = true;
+                    myLocationPermissionGranted = true;
                 }
             }
         }
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -108,29 +144,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-
+                if (isPolygonMode) {
+                    currentPolygon.addMarker(latLng);
+                } else {
+                    // Nika's code here :)
+                }
             }
         });
     }
 
-    public void setupCamera() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+    private void setupCamera() {
+        if (!isLocationGranted()) {
             return;
         }
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
 
-        Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
+        Location location = getLastKnownLocation();
+
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
 
         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
+    }
+
+    // https://stackoverflow.com/questions/20438627/getlastknownlocation-returns-null
+    private Location getLastKnownLocation() throws SecurityException {
+        LocationManager mLocationManager = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
+        List<String> providers = mLocationManager.getProviders(true);
+        Location bestLocation = null;
+        for (String provider : providers) {
+            Location l = mLocationManager.getLastKnownLocation(provider);
+            if (l == null) {
+                continue;
+            }
+            if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
+                // Found best last known location: %s", l);
+                bestLocation = l;
+            }
+        }
+        return bestLocation;
+    }
+
+    private boolean isLocationGranted() {
+        boolean isFineLocationForbidden = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+        boolean isCoarseLocationForbidden = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+
+        return !(isFineLocationForbidden && isCoarseLocationForbidden);
     }
 }
