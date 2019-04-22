@@ -3,9 +3,11 @@ package com.example.lenovoidea.mis_2019_exercise_2_maps_polygons;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -17,9 +19,13 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
 
 import org.w3c.dom.Text;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener {
@@ -28,6 +34,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private EditText inputEditText;
     private Button startPolygonButton;
     private SharedPreferences mapPreferences;
+
+    private boolean polygonDrawMode = false;
+
+    private List<LatLng> latLngs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,18 +52,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         startPolygonButton = (Button) findViewById(R.id.startPolygonButton);
 
         mapPreferences = this.getPreferences(Context.MODE_PRIVATE);
+
+        startPolygonButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                polygonDrawMode = !polygonDrawMode;
+
+                if(polygonDrawMode){
+                    startPolygonButton.setText("End polygon");
+                    latLngs = new ArrayList<>();
+                }else{
+                    startPolygonButton.setText("Start polygon");
+                    if(!latLngs.isEmpty())
+                        renderPolygon();
+                }
+            }
+        });
     }
 
-
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -61,31 +77,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in Sydney and move the camera
         LatLng germany = new LatLng(50, 10);
-        mMap.addMarker(new MarkerOptions().position(germany).title("Marker in Sydney"));
+        mMap.addMarker(new MarkerOptions().position(germany).title("Marker in Germany"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(germany));
 
+        //removeSavedData();
         getSavedData();
     }
 
     @Override
     public void onMapLongClick(LatLng latLng){
-        //Log.d("info", "onMapLongClick: latitude" + latLng.latitude+ " long " + latLng.longitude);
-        //Toast.makeText(MapsActivity.this, "onMapLongClick:\n" + latLng.latitude + " : " + latLng.longitude, Toast.LENGTH_LONG).show();
 
-        mMap.addMarker(new MarkerOptions().position(latLng).title(inputEditText.getText().toString()));
+        if(!polygonDrawMode){
+            mMap.addMarker(new MarkerOptions().position(latLng).title(inputEditText.getText().toString()));
 
-        SharedPreferences.Editor editor = mapPreferences.edit();
+            SharedPreferences.Editor editor = mapPreferences.edit();
 
-        editor.putString(latLng.longitude + ":" + latLng.latitude, inputEditText.getText().toString());
+            editor.putString(latLng.longitude + ":" + latLng.latitude, inputEditText.getText().toString());
 
-        editor.apply();
+            editor.apply();
+        }
+        else{
+            mMap.addMarker(new MarkerOptions().position(latLng));
+            latLngs.add(latLng);
+        }
     }
 
     public void getSavedData(){
         Map<String, ?> allMapData = mapPreferences.getAll();
 
         for (Map.Entry<String, ?> mapData : allMapData.entrySet()) {
-            //Log.d("map values", mapData.getKey() + ": " + mapData.getValue().toString());
             double lon = Double.parseDouble(mapData.getKey().split(":")[0]);
             double lat = Double.parseDouble(mapData.getKey().split(":")[1]);
 
@@ -93,5 +113,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             mMap.addMarker(new MarkerOptions().position(latLng).title(mapData.getValue().toString()));
         }
+    }
+
+    private void removeSavedData(){
+        SharedPreferences.Editor editor = mapPreferences.edit();
+        editor.clear();
+        editor.apply();
+    }
+
+    public void renderPolygon(){
+        PolygonOptions rectOptions = new PolygonOptions().addAll(latLngs);
+
+        Polygon polygon = mMap.addPolygon(rectOptions);
+        polygon.setFillColor(0x5500FF00);
+        polygon.setStrokeColor(Color.BLUE);
+        polygon.setStrokeWidth(3.0f);
     }
 }
