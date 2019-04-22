@@ -46,8 +46,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private MyPolygon currentPolygon;
     private List<MyPolygon> polygons;
 
-    SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
-    SharedPreferences.Editor edit = sharedPref.edit();
+    private List<Marker> markerList;
+
+    public MapsActivity(){
+        if(markerList == null){
+            markerList = new ArrayList<Marker>();
+        }
+    }
+
+    //SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+    //SharedPreferences.Editor edit = sharedPref.edit();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -160,15 +168,55 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .title("You are here")
                         .snippet("Your marker snippet")
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
-                Toast.makeText(this, "Marker Added", Toast.LENGTH_LONG).show();
 
-                edit.putInt(getString(R.string.WHATISGOINGONHERE), WAAAAAAAAAAS);
-                edit.commit();
+                Context context = getApplicationContext();
+                CharSequence text = "Name your marker";
+                int duration = Toast.LENGTH_SHORT;
+                Toast toast =  Toast.makeText(context, text, duration);
+                toast.show();
+
+              // edit.putInt(getString(R.string.WHATISGOINGONHERE), WAAAAAAAAAAS);
+                //edit.commit();
                 //sharedPref = getPreferences(Context.MODE_PRIVATE);
                 //edit = sharedPref.edit();
             }
         });
     }
+
+    //https://stackoverflow.com/questions/25438043/store-google-maps-markers-in-sharedpreferences?rq=1
+
+    public void saveData(){
+        SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        editor.putInt("listSize", markerList.size());
+
+        for(int i = 0; i <markerList.size(); i++){
+            editor.putFloat("lat"+i, (float) markerList.get(0).getPosition().latitude);
+            editor.putFloat("long"+i, (float) markerList.get(0).getPosition().longitude);
+            editor.putString("title"+i, markerList.get(0).getTitle());
+        }
+
+        editor.commit();
+    }
+
+    }
+
+    public void loadData(){
+
+            SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
+
+            int size = sharedPreferences.getInt("listSize", 0);
+            for(int i = 0; i < size; i++){
+                double lat = (double) sharedPreferences.getFloat("lat"+i,0);
+                double longit = (double) sharedPreferences.getFloat("long"+i,0);
+                String title = sharedPreferences.getString("title"+i,"NULL");
+
+                markerList.add(mMap.addMarker(new MarkerOptions().position(new LatLng(lat, longit)).title(title)));
+            }
+        }
+
+
 
     private void setupCamera() {
         if (!isLocationGranted()) {
@@ -182,6 +230,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
     }
+
 
     // https://stackoverflow.com/questions/20438627/getlastknownlocation-returns-null
     private Location getLastKnownLocation() throws SecurityException {
@@ -207,4 +256,5 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         return !(isFineLocationForbidden && isCoarseLocationForbidden);
     }
+
 }
