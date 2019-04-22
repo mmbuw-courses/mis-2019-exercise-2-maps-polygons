@@ -1,7 +1,9 @@
 package com.georgii_nika.assignment2;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -18,8 +20,10 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
@@ -31,6 +35,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Marker myPositionMarker;
     private boolean myLocationPermissionGranted;
 
+
     private boolean isPolygonMode;
 
     private final int ACCESS_MAP = 100;
@@ -40,6 +45,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private MyPolygon currentPolygon;
     private List<MyPolygon> polygons;
+
+    SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+    SharedPreferences.Editor edit = sharedPref.edit();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,14 +149,23 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         setupCamera();
 
 
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
-            public void onMapClick(LatLng latLng) {
+            public void onMapLongClick(LatLng latLng) {
+                // https://stackoverflow.com/questions/42401131/add-marker-on-long-press-in-google-maps-api-v3
                 if (isPolygonMode) {
                     currentPolygon.addMarker(latLng);
-                } else {
-                    // Nika's code here :)
-                }
+                } else mMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title("You are here")
+                        .snippet("Your marker snippet")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                Toast.makeText(this, "Marker Added", Toast.LENGTH_LONG).show();
+
+                edit.putInt(getString(R.string.WHATISGOINGONHERE), WAAAAAAAAAAS);
+                edit.commit();
+                //sharedPref = getPreferences(Context.MODE_PRIVATE);
+                //edit = sharedPref.edit();
             }
         });
     }
