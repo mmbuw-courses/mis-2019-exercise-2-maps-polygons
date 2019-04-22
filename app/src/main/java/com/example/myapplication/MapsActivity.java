@@ -2,18 +2,21 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.nfc.Tag;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.util.ArraySet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,8 +35,13 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class MapsActivity extends Fragment implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener,GoogleMap.OnMarkerClickListener {
 
@@ -42,6 +50,10 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     LocationManager locationManager;
     View view;
     public TextInputLayout mainActivityTexInput;
+    Set<String> myMapList = new HashSet<String>();
+    SharedPreferences sharedPref;
+    SharedPreferences.Editor editor;
+    private String sharedPrefKey="myAppGoogleMapsMIS";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -52,39 +64,23 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
 
         mapFragment.getMapAsync(this);
-
-
-
+        sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+        editor= sharedPref.edit();
+        myMapList=sharedPref.getStringSet(sharedPrefKey,new HashSet<String>());
         return rootView;
     }
 
-
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        Log.d(TAG,"MAP onActivityCreated Ready");
-
 
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        Log.d(TAG,"MapsActivity: ON MAP READY");
-           LatLng sydney = new LatLng(-33.852, 151.211);googleMap.addMarker(new MarkerOptions().position(sydney)
-               .title("Marker in Sydney"));
 
-
-        googleMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        addSavedMarkers();
         locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
 
         mMap.setOnMapLongClickListener(this);
@@ -97,24 +93,7 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
                     @Override
                     public void onLocationChanged(Location location) {
-                        Log.d(TAG,"MapsActivity: LOCATION NETWORK PROVIDER");
-                        double latitude=location.getLatitude();
-                        double longitude=location.getLongitude();
 
-                        LatLng latLng = new LatLng(latitude,longitude);
-
-                        Geocoder geocoder = new Geocoder(getContext());
-                        try {
-                            List<Address> addressList = geocoder.getFromLocation(latitude, longitude, 1);
-                            String str =addressList.get(0).getLocality()+" ";
-                            str+=addressList.get(0).getCountryName();
-
-                            mMap.addMarker(new MarkerOptions().position(latLng).title(str));
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,10.2f));
-
-                        }catch (IOException error){
-                            error.printStackTrace();
-                        }
                     }
 
                     @Override
@@ -136,24 +115,7 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, new LocationListener() {
                     @Override
                     public void onLocationChanged(Location location) {
-                        Log.d(TAG,"MapsActivity: LOCATION GPS");
-                        double latitude=location.getLatitude();
-                        double longitude=location.getLongitude();
 
-                        LatLng latLng = new LatLng(latitude,longitude);
-
-                        Geocoder geocoder = new Geocoder(getContext());
-                        try {
-                            List<Address> addressList = geocoder.getFromLocation(latitude, longitude, 1);
-                            String str =addressList.get(0).getLocality()+" ";
-                            str+=addressList.get(0).getCountryName();
-
-                            mMap.addMarker(new MarkerOptions().position(latLng).title(str));
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,10.2f));
-
-                        }catch (IOException error){
-                            error.printStackTrace();
-                        }
                     }
 
                     @Override
@@ -185,8 +147,7 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     //https://stackoverflow.com/questions/16097143/google-maps-android-api-v2-detect-long-click-on-map-and-add-marker-not-working
     @Override
     public void onMapLongClick(LatLng latLng) {
-        MarkerOptions markerOptions=new MarkerOptions().position(latLng).title(latLng.toString());
-        mMap.addMarker(markerOptions);
+        addMarkers(latLng);
 
         Toast.makeText(getContext(),
                 "New marker added@" + latLng.toString(), Toast.LENGTH_LONG)
@@ -205,6 +166,36 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
                 }catch (IOException error){
                     Log.d(TAG,error.toString());
                 }
+    }
+
+    //https://stackoverflow.com/questions/27261670/convert-string-to-latlng
+    public void addSavedMarkers() {
+        Iterator<String> iterator=myMapList.iterator();
+        while(iterator.hasNext()){
+            String mymapValues=iterator.next();
+            mymapValues=mymapValues.replace("lat/lng: (","");
+            mymapValues=mymapValues.replace(")","");
+            String[] latlong =  mymapValues.split(",");
+            Log.d(TAG,"MARKERS INFO____:"+latlong[0]);
+            Log.d(TAG,"MARKERS INFO____:"+latlong[1]);
+            double latitude = Double.parseDouble(latlong[0]);
+            double longitude = Double.parseDouble(latlong[1]);
+            LatLng location = new LatLng(latitude, longitude);
+            addMarkers(location );
+        }
+
+    }
+
+    public void addMarkers(LatLng latLng){
+        MarkerOptions markerOptions=new MarkerOptions().position(latLng).title(latLng.toString());
+        mMap.addMarker(markerOptions);
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,10.2f));
+        myMapList.add(latLng.toString());
+        editor.clear();
+        editor.putStringSet(sharedPrefKey,myMapList);
+        editor.apply();
+        Log.d(TAG,"Number of SETs:"+myMapList.size());
+        Log.d(TAG,""+sharedPref.getStringSet(sharedPrefKey,new HashSet<String>()).size());
     }
 
     @Override
