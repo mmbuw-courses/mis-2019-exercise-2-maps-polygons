@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">MiSExercise_2</string>
     <string name="title_activity_maps">Map</string>
+    <string name="button_start">Start Polygon</string>
+    <string name="button_end">End Polygon</string>
+    <string name="as">\@string/button_end</string>
 </resources>

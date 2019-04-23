@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.icu.math.BigDecimal;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -17,6 +16,7 @@ import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -28,11 +28,11 @@ import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.maps.android.SphericalUtil;
 
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import static android.text.TextUtils.split;
 
@@ -47,7 +47,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     SharedPreferences pref;
     String marker;
     Boolean polygonExist = false;
-    DecimalFormat df = new DecimalFormat("#.##");
+
+    //code for permission and centering from
+    //https://stackoverflow.com/questions/21403496/how-to-get-current-location-in-google-map-android/21403526
     public void centreMapOnLocation(Location location, String title) {
 
         LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
@@ -76,6 +78,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        final Button button= (Button) findViewById(R.id.buttonPolygon);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -83,11 +86,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         textInput = (EditText)findViewById(R.id.textInput);
         pref = getApplicationContext().getSharedPreferences("Markers", MODE_PRIVATE);
         editor = pref.edit();
-        Button button= (Button) findViewById(R.id.buttonPolygon);
 
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 addPolygon();
+                if(polygonExist){
+                    button.setText(getString(R.string.button_end));
+                }
+                else{
+                    button.setText(getString(R.string.button_start));
+                    counter = 0;
+                }
             }
         });
     }
@@ -95,33 +104,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        System.out.println("HERE");
         Intent intent = getIntent();
+        //Clear possibly remaining markers from the last session
         editor.clear();
         editor.commit();
 
-        System.out.println("HERE2");
         locationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
         locationListener = new LocationListener() {
-        //centreMapOnLocation(location,"Your Location");
             @Override
             public void onLocationChanged(Location location) {
-                //centreMapOnLocation(location,"Your Location");
             }
-
             @Override
             public void onStatusChanged(String s, int i, Bundle bundle) {
-
             }
 
             @Override
             public void onProviderEnabled(String s) {
-
             }
 
             @Override
             public void onProviderDisabled(String s) {
-
             }
         };
 
@@ -140,17 +142,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mMap.addMarker(new MarkerOptions().position(point)
                 .title(textInput.getText().toString()));
 
+                //Since putStringSet is unordered, we store the latitude and longitude and description as one csv that can be separated later
                 marker = Double.toString(point.latitude) + "," + Double.toString(point.longitude) + "," + textInput.getText().toString();
-                editor.putString("marker" + Integer.toString(counter), marker);
+                editor.putString(Integer.toString(counter), marker);
                 editor.apply();
                 counter++;
-
-                //Map<String,?> keys = pref.getAll();
-                //System.out.println(keys.size());
-                //for(Map.Entry<String,?> entry : keys.entrySet()){
-                 //   Log.d("map values",entry.getKey() + ": " + entry.getValue().toString());
-                //}
-
             }
         });
     }
@@ -164,9 +160,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             String ending;
             List<LatLng> area = new ArrayList<>();
             Map<String, ?> keys = pref.getAll();
+            Map<Integer, String> sortedMap = new TreeMap<Integer, String>();
             PolygonOptions rectOptions = new PolygonOptions();
 
+            if(keys.size() < 3){
+                Toast.makeText(this, "Please add at least 3 Markers to create a polygon.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            //The map we get back is unordered, there is surely a smarter way to solve this, but passing it to a sorted list works...
             for (Map.Entry<String, ?> entry : keys.entrySet()) {
+                sortedMap.put(Integer.parseInt(entry.getKey()), entry.getValue().toString());
+            }
+
+            for(SortedMap.Entry<Integer, String> entry : sortedMap.entrySet()){
+                System.out.println(entry);
                 lat = Double.parseDouble(split(entry.getValue().toString(), ",")[0]);
                 lon = Double.parseDouble(split(entry.getValue().toString(), ",")[1]);
                 rectOptions.add(new LatLng(lat, lon));
@@ -175,6 +183,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 centroidY += lon;
             }
 
+            //using a given function from the google API to calculate the area
+            //http://googlemaps.github.io/android-maps-utils/javadoc/com/google/maps/android/SphericalUtil.html
             areaComp = SphericalUtil.computeArea(area);
             if(areaComp < 10000)
             {
@@ -190,27 +200,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 areaComp /= 1e+6;
             }
 
+            String area_str = String.format("%.02f", areaComp);
+
             // Get back the mutable Polygon
             Polygon polygon = mMap.addPolygon(rectOptions.fillColor(0x556aa0f7).strokeWidth(1));
             mMap.addMarker(new MarkerOptions().position(new LatLng(centroidX/keys.size(), centroidY/keys.size()))
-                    .title(Double.toString(round(areaComp, 2)) + ending));
+                    .title(area_str + ending));
+            Toast.makeText(this, "The selected area has a size of " + area_str + ending, Toast.LENGTH_SHORT).show();
             polygonExist = true;
-
         }
         else{
             mMap.clear();
+            //Clear the shared preferences, so that the previous markers are no longer considered for the polygon
             editor.clear();
             editor.commit();
             polygonExist = false;
         }
-    }
-    //round method from https://stackoverflow.com/questions/2808535/round-a-double-to-2-decimal-places
-    public static double round(double value, int places) {
-        if (places < 0) throw new IllegalArgumentException();
-
-        long factor = (long) Math.pow(10, places);
-        value = value * factor;
-        long tmp = Math.round(value);
-        return (double) tmp / factor;
     }
 }
