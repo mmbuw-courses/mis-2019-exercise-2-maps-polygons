@@ -186,7 +186,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             areaComp = SphericalUtil.computeArea(area);
             if(areaComp < 10000)
             {
-                ending = " m2";
+                ending = " m²";
             }
             else if(areaComp >= 10000 && areaComp < 1000000)
             {
