@@ -53,3 +53,7 @@ google-services.json
 freeline.py
 freeline/
 freeline_project_description.json
+
+
+#folder to not ignore
+!/Student_Info_ScreenShot_and_APK/*.apk
