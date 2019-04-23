@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout android:id="@+id/coordinatorLayout"
+    android:layout_width="match_parent"
+
+    android:layout_height="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+<fragment xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:map="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/map"
+    android:name="com.google.android.gms.maps.SupportMapFragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.projects.assignment.googlemapsassinment.MapsActivity" />
+
+    <EditText
+        android:id="@+id/editTextCustomMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:elevation="10dp"
+        android:hint="Enter Message"
+        android:background="@android:color/white"
+        android:padding="8dp"
+        android:layout_margin="16dp"
+        />
+
+    <ProgressBar
+        android:id="@+id/progressBarLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/buttonStartStopPolygon"
+        android:layout_gravity="bottom|right"
+        android:layout_margin="16dp"
+        android:text="Start Polygon"/>
+
+</android.support.design.widget.CoordinatorLayout>
+
+
