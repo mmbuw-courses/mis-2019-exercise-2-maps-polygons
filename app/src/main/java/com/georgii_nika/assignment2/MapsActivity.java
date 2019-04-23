@@ -20,6 +20,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -31,10 +32,9 @@ import java.util.List;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    private GoogleMap mMap;
+    private GoogleMap myMap;
     private Marker myPositionMarker;
     private boolean myLocationPermissionGranted;
-
 
     private boolean isPolygonMode;
 
@@ -47,19 +47,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private List<MyPolygon> polygons;
 
     private List<Marker> markerList;
+    private SharedPreferences sharedPref;
 
-    public MapsActivity(){
-        if(markerList == null){
-            markerList = new ArrayList<Marker>();
-        }
-    }
-
-    //SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
     //SharedPreferences.Editor edit = sharedPref.edit();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -67,6 +62,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         isPolygonMode = false;
         polygons = new ArrayList<>();
+        sharedPref = getPreferences(Context.MODE_PRIVATE);
 
         polygonButton = findViewById(R.id.polygonButton);
         editText = findViewById(R.id.editText);
@@ -87,7 +83,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void onPolygonButtonClick() {
         if (!isPolygonMode) {
             setPolygonMode(true);
-            currentPolygon = new MyPolygon(mMap);
+            currentPolygon = new MyPolygon(myMap);
         } else {
             try {
                 currentPolygon.closePolygon();
@@ -96,6 +92,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 setPolygonMode(false);
             } catch (MyPolygon.NotEnoughPointsException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                currentPolygon = null;
+                setPolygonMode(false);
             } catch (MyPolygon.PolygonIsSelfIntersectingException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
                 currentPolygon.cleanup();
@@ -110,9 +108,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             return;
         }
 
-        mMap.setMyLocationEnabled(true);
+        myMap.setMyLocationEnabled(true);
 
-        mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+        myMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
             @Override
             public void onMyLocationChange(Location location) {
                 LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
@@ -121,7 +119,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     myPositionMarker.remove();
                 }
 
-                myPositionMarker = mMap.addMarker(new MarkerOptions().position(latLng).title("It's Me!"));
+                myPositionMarker = myMap.addMarker(new MarkerOptions().position(latLng).title("It's Me!"));
             }
         });
     }
@@ -150,72 +148,89 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
+        myMap = googleMap;
 
         getLocationPermission();
         setupLocationTracking();
         setupCamera();
+        markerList = loadMarkers(myMap, sharedPref);
 
-
-        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+        myMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
-            public void onMapLongClick(LatLng latLng) {
-                // https://stackoverflow.com/questions/42401131/add-marker-on-long-press-in-google-maps-api-v3
+            public void onMapClick(LatLng latLng) {
                 if (isPolygonMode) {
                     currentPolygon.addMarker(latLng);
-                } else mMap.addMarker(new MarkerOptions()
-                        .position(latLng)
-                        .title("You are here")
-                        .snippet("Your marker snippet")
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                }
+            }
+        });
 
-                Context context = getApplicationContext();
-                CharSequence text = "Name your marker";
-                int duration = Toast.LENGTH_SHORT;
-                Toast toast =  Toast.makeText(context, text, duration);
-                toast.show();
 
-              // edit.putInt(getString(R.string.WHATISGOINGONHERE), WAAAAAAAAAAS);
-                //edit.commit();
-                //sharedPref = getPreferences(Context.MODE_PRIVATE);
-                //edit = sharedPref.edit();
+        myMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+                MapsActivity.this.onMapLongClick(latLng);
             }
         });
     }
 
-    //https://stackoverflow.com/questions/25438043/store-google-maps-markers-in-sharedpreferences?rq=1
+    private void onMapLongClick(LatLng latLng) {
+        String text = editText.getText().toString();
 
-    public void saveData(){
-        SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-
-        editor.putInt("listSize", markerList.size());
-
-        for(int i = 0; i <markerList.size(); i++){
-            editor.putFloat("lat"+i, (float) markerList.get(0).getPosition().latitude);
-            editor.putFloat("long"+i, (float) markerList.get(0).getPosition().longitude);
-            editor.putString("title"+i, markerList.get(0).getTitle());
+        if (text.length() == 0) {
+            Toast.makeText(getApplicationContext(), "Name your marker, my dear", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        if (!isPolygonMode) {
+            Marker marker = myMap.addMarker(new MarkerOptions()
+                    .position(latLng)
+                    .title(text)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+            saveMarker(marker);
+            editText.setText("");
+        }
+    }
+
+    private void saveMarker(Marker marker) {
+        SharedPreferences.Editor editor = sharedPref.edit();
+        markerList.add(marker);
+
+        int i = markerList.size() - 1;
+
+        int size = markerList.size();
+        float lat = (float) marker.getPosition().latitude;
+        float lng = (float) marker.getPosition().longitude;
+        String title = marker.getTitle();
+
+        editor.putInt("listSize", size);
+        editor.putFloat("lat" + i, lat);
+        editor.putFloat("long" + i, lng);
+        editor.putString("title" + i, title);
 
         editor.commit();
     }
 
-    }
+    public List<Marker> loadMarkers(GoogleMap googleMap, SharedPreferences pref) {
 
-    public void loadData(){
+        List<Marker> markers = new ArrayList<>();
 
-            SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
+        int size = pref.getInt("listSize", 0);
+        for (int i = 0; i < size; i++) {
+            double lat = (double) pref.getFloat("lat" + i, 0);
+            double lng = (double) pref.getFloat("long" + i, 0);
 
-            int size = sharedPreferences.getInt("listSize", 0);
-            for(int i = 0; i < size; i++){
-                double lat = (double) sharedPreferences.getFloat("lat"+i,0);
-                double longit = (double) sharedPreferences.getFloat("long"+i,0);
-                String title = sharedPreferences.getString("title"+i,"NULL");
-
-                markerList.add(mMap.addMarker(new MarkerOptions().position(new LatLng(lat, longit)).title(title)));
-            }
+            String title = pref.getString("title" + i, "NULL");
+            MarkerOptions options = new MarkerOptions()
+                    .position(new LatLng(lat, lng))
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                    .title(title);
+            Marker marker = googleMap.addMarker(options);
+            markers.add(marker);
         }
 
+        return markers;
+    }
 
 
     private void setupCamera() {
@@ -225,10 +240,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Location location = getLastKnownLocation();
 
-        double latitude = location.getLatitude();
-        double longitude = location.getLongitude();
+        if (location != null) {
+            double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
+            myMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(latitude, longitude)));
+        }
     }
 
 

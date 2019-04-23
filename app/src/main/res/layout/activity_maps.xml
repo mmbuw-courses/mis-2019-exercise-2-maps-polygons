@@ -16,7 +16,8 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textPersonName"
-        android:text="Search" />
+        android:hint="Marker title"
+        android:text="" />
 
     <Button
         android:id="@+id/polygonButton"

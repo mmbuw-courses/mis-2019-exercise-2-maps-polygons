@@ -63,6 +63,7 @@ public class MyPolygon {
 
     public void closePolygon() throws MyPolygon.NotEnoughPointsException, MyPolygon.PolygonIsSelfIntersectingException {
         if (markers.size() < 3) {
+            cleanup();
             throw new NotEnoughPointsException();
         }
 
@@ -101,11 +102,11 @@ public class MyPolygon {
         Coordinate centroidPoint = centroidArea.getCentroid();
         LatLng centroidPosition = new LatLng(centroidPoint.x, centroidPoint.y);
 
-        double area = SphericalUtil.computeArea(polygon.getPoints()) / 1000;
+        double area = SphericalUtil.computeArea(polygon.getPoints());
 
         MarkerOptions centroidMarkerOptions = new MarkerOptions()
                 .position(centroidPosition)
-                .title(format.format(area) + " km\u00B2")
+                .title(format.format(area) + " m\u00B2")
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET));
         map.addMarker(centroidMarkerOptions);
     }
