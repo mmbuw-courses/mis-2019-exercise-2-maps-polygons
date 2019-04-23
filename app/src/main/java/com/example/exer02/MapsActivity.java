@@ -186,7 +186,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         Location firstLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         LatLng firstLtLn = new LatLng(firstLocation.getLatitude(),firstLocation.getLongitude());
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(firstLtLn, 10));
+        //LatLng schlossWeimar = new LatLng(50.9809005,11.332687);
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(schlossWeimar, 18));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(firstLtLn,10));
         mMap.addMarker(new MarkerOptions().position(firstLtLn).title("You are here"));
 
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
