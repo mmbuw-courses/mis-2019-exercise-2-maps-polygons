@@ -1,105 +1,146 @@
 package com.example.assignment2;
 
-import android.support.v4.app.FragmentActivity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.support.annotation.NonNull;
-import android.util.Log;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.widget.EditText;
 
-
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.Task;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
+
+
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener
 {
 
     private static final String TAG = MapsActivity.class.getSimpleName();
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 0000;
     private GoogleMap mMap;
-    private CameraPosition mCameraPosition;
+    protected LocationManager locationManager;
+    protected LocationListener locationListener;
+    protected String latitude, longitude;
+    protected boolean gps_enabled, network_enabled;
+    private boolean mLocationPermissionGranted = false;
+    private SharedPreferences sharedPref;
 
 
-    // geographical Location where the device is currently located
-    private Location mLastKnownLocation;
 
-    // Keys for storing activity state
-    private static final String KEY_CAMERA_POSITION = "camera_position";
-    private static final String KEY_LOCATION = "location";
+    // Source: https://developers.google.com/maps/documentation/android-sdk/current-place-tutorial
+    // Get the permission for the location
+    private void getLocationPermission() {
 
-    private final LatLng mDefaultLocation;
-    private static final int DEFAULT_ZOOM = 15;
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
 
-    //warum???
-    public MapsActivity(LatLng mDefaultLocation) {
-        this.mDefaultLocation = mDefaultLocation;
+    // Source: https://developers.google.com/maps/documentation/android-sdk/current-place-tutorial
+    // Gets Permission Result
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        mLocationPermissionGranted = false;
+
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mLocationPermissionGranted = true;
+                }
+            }
+        }
     }
 
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        //source: https://developers.google.com/maps/documentation/android-sdk/current-place-tutorial
-        if (savedInstanceState != null) {
-            mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
-            mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
-        }
 
         // Get content view
         setContentView(R.layout.activity_maps);
 
 
         // Build the map
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        // Asks for permission
+        getLocationPermission();
+
+
+        // Source: https://javapapers.com/android/get-current-location-in-android/
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        if (mLocationPermissionGranted == true)
+        {
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 1000, this);
+        }
+
+        // Source: https://developer.android.com/training/data-storage/shared-preferences#java
+        sharedPref = getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+
+
     }
 
 
-    //source: https://developers.google.com/maps/documentation/android-sdk/current-place-tutorial
-    private void getDeviceLocation (@NonNull Task<Location> task)
-    {
-        if (task.isSuccessful())
-        {
-            // Set the map's camera position to the current location of the device.
-            mLastKnownLocation = task.getResult();
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                    new LatLng(mLastKnownLocation.getLatitude(),
-                            mLastKnownLocation.getLongitude()), DEFAULT_ZOOM));
-
-            // Set a marker at current position
-            mMap.addMarker(new MarkerOptions().position(new LatLng(mLastKnownLocation.getLatitude(),
-                    mLastKnownLocation.getLongitude())).title("Marker in your current position"));
-        }
-        else
-        {
-            Log.d(TAG, "Current location is null. Using defaults.");
-            Log.e(TAG, "Exception: %s", task.getException());
-            mMap.moveCamera(CameraUpdateFactory
-                    .newLatLngZoom(mDefaultLocation, DEFAULT_ZOOM));
-            mMap.getUiSettings().setMyLocationButtonEnabled(false);
-        }
+    // Source: https://javapapers.com/android/get-current-location-in-android/
+    @Override
+    public void onLocationChanged(Location location) {
+        LatLng newMarker = new LatLng(location.getLatitude(), location.getLongitude());
+        mMap.addMarker(new MarkerOptions().position(newMarker).title("Current Position"));
     }
 
+    @Override
+    public void onProviderDisabled(String provider) {
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+    }
 
 
     @Override
-    public void onMapReady(GoogleMap googleMap)
-        {
+    public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
 
+                //Add a marker where you pressed long
+                EditText newMarker = findViewById(R.id.EnterText);
+                String newMarkerText = newMarker.getText().toString();
+                mMap.addMarker(new MarkerOptions().position(latLng).title(newMarkerText));
 
-        // Add a marker in Sydney and move the camera
-        //LatLng sydney = new LatLng(-34, 151);
-        //mMap.addMarker(new MarkerOptions().position(mLastKnownLocation).title("Marker in your current position"));
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(mCameraPosition));
-        }
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString("Marker Name", newMarkerText);
+                editor.putString("Position", latLng.toString());
+                editor.apply();
+
+            }
+        });
+
+    }
 }
 
