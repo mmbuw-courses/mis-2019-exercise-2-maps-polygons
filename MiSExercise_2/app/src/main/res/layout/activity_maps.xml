@@ -1,0 +1,39 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+tools:context=".MapsActivity" >
+
+<fragment
+    android:name="com.google.android.gms.maps.SupportMapFragment"
+    android:id="@+id/map"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentTop="true"
+    class="com.google.android.gms.maps.SupportMapFragment" />
+
+<EditText
+    android:id="@+id/textInput"
+    android:layout_width="240dp"
+    android:layout_height="40dp"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentTop="true"
+    android:layout_marginLeft="18dp"
+    android:layout_marginTop="14dp"
+    android:hint="Marker Description"
+    android:textColor="@android:color/black"
+    android:background="@android:color/white" />
+
+    <Button
+        android:id="@+id/buttonPolygon"
+        android:layout_width="96dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="10dp"
+        android:layout_marginLeft="8dp"
+        android:layout_toRightOf="@+id/textInput"
+        android:layout_alignParentRight="true"
+        android:text="@string/button_start"/>
+
+</RelativeLayout>
