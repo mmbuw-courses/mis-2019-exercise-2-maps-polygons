@@ -4,38 +4,35 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.nfc.Tag;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
-import android.util.ArraySet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.Button;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.GoogleMapOptions;
-import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -54,6 +51,9 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     SharedPreferences sharedPref;
     SharedPreferences.Editor editor;
     private String sharedPrefKey="myAppGoogleMapsMIS";
+    private boolean createPoligonFlag=false;
+
+    List<LatLng> poligonList = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -61,14 +61,23 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
         Log.d(TAG, "MAP onCreateView Ready");
         View rootView = inflater.inflate(R.layout.activity_maps, container, false);
         view = rootView;
-        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
 
+        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
         sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         editor= sharedPref.edit();
         myMapList=sharedPref.getStringSet(sharedPrefKey,new HashSet<String>());
+
         return rootView;
     }
+
+    private View.OnClickListener buttonClickListener() {
+        Log.d(TAG,"Button Poligon Click");
+        return null;
+    }
+
+    private void buttonClickListener(View target){}
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -147,7 +156,7 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     //https://stackoverflow.com/questions/16097143/google-maps-android-api-v2-detect-long-click-on-map-and-add-marker-not-working
     @Override
     public void onMapLongClick(LatLng latLng) {
-        addMarkers(latLng);
+        addMarkersToMap(latLng);
 
         Toast.makeText(getContext(),
                 "New marker added@" + latLng.toString(), Toast.LENGTH_LONG)
@@ -181,21 +190,17 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
             double latitude = Double.parseDouble(latlong[0]);
             double longitude = Double.parseDouble(latlong[1]);
             LatLng location = new LatLng(latitude, longitude);
-            addMarkers(location );
+            addMarkersToMap(location );
         }
 
     }
 
-    public void addMarkers(LatLng latLng){
-        MarkerOptions markerOptions=new MarkerOptions().position(latLng).title(latLng.toString());
-        mMap.addMarker(markerOptions);
+    private void savePreftMarker(LatLng latLng){
         //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,10.2f));
         myMapList.add(latLng.toString());
         editor.clear();
         editor.putStringSet(sharedPrefKey,myMapList);
         editor.apply();
-        Log.d(TAG,"Number of SETs:"+myMapList.size());
-        Log.d(TAG,""+sharedPref.getStringSet(sharedPrefKey,new HashSet<String>()).size());
     }
 
     @Override
@@ -215,5 +220,49 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
             Log.d(TAG,error.toString());
         }
         return false;
+    }
+
+    public void polygonFlagToggle(Button button){
+        if(createPoligonFlag){
+            createPoligonFlag=false;
+            button.setText("Start Polygon");
+        }else{
+            createPoligonFlag=true;
+            button.setText("End Polygon");
+        }
+    }
+
+    public void addMarkersToMap(LatLng latLng){
+        MarkerOptions markerOptions=new MarkerOptions().position(latLng).title(latLng.toString());
+        mMap.addMarker(markerOptions);
+
+        if(createPoligonFlag){
+            createPolygon(markerOptions);
+        }else{
+            savePreftMarker(latLng);
+        }
+
+    }
+
+    private void createPolygon(MarkerOptions marker){
+        poligonList.add(marker.getPosition());
+        Log.d(TAG,"Create Polygon");
+        createLineFromMarkers();
+    }
+
+    //https://developers.google.com/maps/documentation/android-sdk/shapes
+    private void createLineFromMarkers(){
+        PolygonOptions polygonOptions=new PolygonOptions();
+        polygonOptions.fillColor(Color.argb(50,50,50,50)).addAll(poligonList);
+        mMap.addPolygon(polygonOptions);
+        Log.d(TAG,"Add Polyline:"+poligonList);
+    }
+
+    public void clearMarkers(){
+        poligonList.clear();
+        mMap.clear();
+        myMapList.clear();
+        editor.putStringSet(sharedPrefKey,myMapList);
+        editor.apply();
     }
 }
