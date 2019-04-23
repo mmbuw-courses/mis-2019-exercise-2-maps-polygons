@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">mis-2019-exercise-2-maps-polygons</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="edit_title">Enter a title</string>
+    <string name="edit_message">Enter a message</string>
+    <string name="dialog_location_permission">Do you want to allow this app to access your location?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+</resources>
