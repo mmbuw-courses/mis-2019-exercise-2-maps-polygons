@@ -153,7 +153,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         polyButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!polygonActive){
+                if(!polygonActive && markerPreferences.getInt("listSize",0)!= 0 ){
                     //deleteData();
                     loadData();
                     PolygonOptions polygonOptions = new PolygonOptions();
@@ -171,6 +171,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     loadData();
                     polygonActive = false;
                     polyButton.setText("Start Polygon");
+                }
+                if(markerPreferences.getInt("listSize",0)== 0){
+                    Toast.makeText(MapsActivity.this, "Please add custom pins!", Toast.LENGTH_SHORT).show();
                 }
             }
         });
