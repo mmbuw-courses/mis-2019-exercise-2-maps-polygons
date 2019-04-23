@@ -78,11 +78,5 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
-        btnAdd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
     }
 }
