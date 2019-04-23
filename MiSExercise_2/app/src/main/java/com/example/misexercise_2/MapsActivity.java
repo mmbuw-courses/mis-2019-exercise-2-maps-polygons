@@ -48,6 +48,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String marker;
     Boolean polygonExist = false;
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_maps);
+        final Button button= (Button) findViewById(R.id.buttonPolygon);
+
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+        textInput = (EditText)findViewById(R.id.textInput);
+        pref = getApplicationContext().getSharedPreferences("Markers", MODE_PRIVATE);
+        editor = pref.edit();
+
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                addPolygon();
+                if(polygonExist){
+                    button.setText(getString(R.string.button_end));
+                }
+                else{
+                    button.setText(getString(R.string.button_start));
+                }
+            }
+        });
+    }
+
     //code for permission and centering from
     //https://stackoverflow.com/questions/21403496/how-to-get-current-location-in-google-map-android/21403526
     public void centreMapOnLocation(Location location, String title) {
@@ -75,36 +101,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_maps);
-        final Button button= (Button) findViewById(R.id.buttonPolygon);
-
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-        textInput = (EditText)findViewById(R.id.textInput);
-        pref = getApplicationContext().getSharedPreferences("Markers", MODE_PRIVATE);
-        editor = pref.edit();
-
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                addPolygon();
-                if(polygonExist){
-                    button.setText(getString(R.string.button_end));
-                }
-                else{
-                    button.setText(getString(R.string.button_start));
-                    counter = 0;
-                }
-            }
-        });
-    }
-
-    @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        Intent intent = getIntent();
         //Clear possibly remaining markers from the last session
         editor.clear();
         editor.commit();
@@ -215,6 +213,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             editor.clear();
             editor.commit();
             polygonExist = false;
+            counter = 0;
         }
     }
 }
