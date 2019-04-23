@@ -1,22 +1,17 @@
 package com.awesometek.mis2;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.location.Location;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -26,7 +21,6 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
@@ -121,7 +115,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             BitmapDescriptorFactory.defaultMarker(168))));
                     addVertexToCurrPolygon(pos);
                 }
-                // 168 color
             }
         });
     }
@@ -210,13 +203,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng pos = new LatLng(centroid[0], centroid[1]);
 
         // magic conversion number from https://en.wikipedia.org/wiki/Decimal_degrees
+        // may be very rough; alternatively SphericalUtil#computeArea could be used
         double[] meterLats = new double[polygonPoints.size()];
         double[] meterLngs = new double[polygonPoints.size()];
-        LatLng firstPos = polygonPoints.get(0);
         for(int i = 0; i < polygonPoints.size(); ++i) {
             meterLats[i] = polygonPoints.get(i).latitude * 111320;
             meterLngs[i] = polygonPoints.get(i).longitude * 111320;
-            Log.d("YorrickDebug", String.valueOf(i) + ": " + meterLngs[i] + " and " + meterLats[i]);
         }
 
         // area computation adapted from https://www.mathopenref.com/coordpolygonarea2.html
@@ -234,16 +226,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(area < 10000) {
             areaText = String.valueOf((float) area) + " m²";
         } else {
-            areaText = String.valueOf((float) area / 1000000) + "km²";
+            areaText = String.valueOf((float) area / 1000000) + " km²";
         }
         mMap.addMarker(new MarkerOptions().position(pos)
                 .icon(BitmapDescriptorFactory.defaultMarker(168))
                 .title(areaText));
         polygons.add(currPolygon);
-    }
-
-    public void calculatePolygonArea() {
-
-
+        currPolygon = null;
     }
 }
