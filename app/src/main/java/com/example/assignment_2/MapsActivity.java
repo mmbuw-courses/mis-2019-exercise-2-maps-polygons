@@ -74,7 +74,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }else {
                     button.setText("End Polygon");
                     double result = polygon_area_calculation(latitude_list,longtitude_list);
-                    view_area.setText(result + "m^2");
+                    view_area.setText(result + "km^2");
                     PolygonOptions polygonOptions = new PolygonOptions();
                     polygonOptions.addAll(latLngs).strokeWidth(2).fillColor(0x7F1817C0);
                     mMap.addPolygon(polygonOptions);
@@ -104,7 +104,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in Sydney and move the camera
         LatLng started_point = new LatLng(50.980806, 11.332357);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(started_point,16.8f));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(started_point,5.0f));
 
 
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
