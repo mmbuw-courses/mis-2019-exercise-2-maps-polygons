@@ -139,7 +139,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         // Help from: Olli Singler :)
                         double area = SphericalUtil.computeArea(MarkerList);
 
-                        // not working 
+                        // not working
                         // mMap.addMarker(new MarkerOptions().position(MarkerList.get(0)).title("Area: " +area));
 
 
