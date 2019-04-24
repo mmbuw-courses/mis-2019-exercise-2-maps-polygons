@@ -16,18 +16,10 @@ public class MainActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        /*Toolbar toolbar = findViewById(R.id.toolbar);
 
 
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
-
+        //Get the fragment this was achieve by Stackoverflow post
+        //Sadly loose the link
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         final MapsActivity mapsActivity=new MapsActivity();
@@ -35,7 +27,8 @@ public class MainActivity extends FragmentActivity {
         fragmentTransaction.add(R.id.myMap,mapsActivity);
         fragmentTransaction.commit();
 
-        poligonBtn= (Button) findViewById(R.id.poligonBtn);
+        //Track the button for Polygon drawing
+        poligonBtn= findViewById(R.id.poligonBtn);
         poligonBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -43,7 +36,9 @@ public class MainActivity extends FragmentActivity {
             }
         });
 
-        clearMarkersBtn= (Button) findViewById(R.id.clearMarkersBtn);
+        //Add a function to clear the screen of saved markers, it was a little
+        //difficult to work after a while
+        clearMarkersBtn= findViewById(R.id.clearMarkersBtn);
         clearMarkersBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

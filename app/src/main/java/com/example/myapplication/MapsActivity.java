@@ -17,7 +17,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,17 +46,31 @@ import com.google.maps.android.SphericalUtil;
 
 public class MapsActivity extends Fragment implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener,GoogleMap.OnMarkerClickListener {
 
+    //TAG for log mostly for error handling
     private final String TAG = "MapsActivity";
+
     private GoogleMap mMap;
     LocationManager locationManager;
     View view;
+
+    //TextView on main Activity
     public TextView mainActivityTexInput;
-    Set<String> myMapList = new HashSet<String>();
+
+    //Sets to save the data of the markers and share pref object to save
+    //Is really bad to have two different list for data, in the future think
+    // in a string structure maybe with JSON or other data format structure
+    Set<String> appLocationList = new HashSet<String>();
+    Set<String> appMessageList = new HashSet<String>();
     SharedPreferences sharedPref;
     SharedPreferences.Editor editor;
-    private String sharedPrefKey="myAppGoogleMapsMIS";
+    //List for lat and long coordinates and list for
+    //specific messages area and address
+    private String sharedPrefKeyLocation ="myAppGoogleMapsMISLocation";
+    private String sharedPrefKeyMessages ="myAppGoogleMapsMISMessages";
     private boolean createPolygonFlag =false;
-    private LatLng centroidLatLng;
+
+    //List to store and draw the information of the polygons
+    List<List<LatLng>> listPolyList= new ArrayList<>();
     List<LatLng> polygonList = new ArrayList<>();
 
     @Override
@@ -72,7 +85,8 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
 
         sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         editor= sharedPref.edit();
-        myMapList=sharedPref.getStringSet(sharedPrefKey,new HashSet<String>());
+        appLocationList =sharedPref.getStringSet(sharedPrefKeyLocation,new HashSet<String>());
+        appMessageList =sharedPref.getStringSet(sharedPrefKeyMessages,new HashSet<String>());
         return rootView;
     }
 
@@ -86,16 +100,13 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        List<LatLng> exampleList = new ArrayList<LatLng>();
-        exampleList.add(new LatLng(-1,0));
-        exampleList.add(new LatLng(1,0));
-        exampleList.add(new LatLng(0,1));
-        exampleList.add(new LatLng(-1,0));
-        calculateAreaAndCentroid(exampleList);
-
+        //Add the markers saved from the last session
         addSavedMarkers();
+
+        //Prepare location manager for find current locations
         locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
 
+        //Add event listeners for the interaction with the map and the markers
         mMap.setOnMapLongClickListener(this);
         mMap.setOnMarkerClickListener(this);
 
@@ -106,7 +117,7 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
 
             //If there is no permissions ask for permissions
             ActivityCompat.requestPermissions(getActivity(),new String[]{Manifest.permission.ACCESS_FINE_LOCATION},1);
-
+            super.onPause();
             }else {
 
             //If there is permissions find the current location
@@ -164,6 +175,9 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
 
     //Add the marker and center the map on the current location
     private void findCurrentLocation(LatLng latLng){
+        Toast.makeText(getContext(),
+                "Finding Current Location", Toast.LENGTH_LONG)
+                .show();
         addMarkersToMap(latLng);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,10.2f));
 
@@ -174,31 +188,29 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     public void onMapLongClick(LatLng latLng) {
         addMarkersToMap(latLng);
 
-        //Toast.makeText(getContext(),
-        //        "New marker added@" + latLng.toString(), Toast.LENGTH_LONG)
-        //        .show();
-                Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
-                try {
-                    List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
-                    if (addresses.isEmpty()) {
-                        mainActivityTexInput.setText("Waiting for Location");
-                    }else {
-                        if (addresses.size() > 0) {
-                            mainActivityTexInput.setText(addresses.get(0).getFeatureName() + ", " + addresses.get(0).getLocality() +", " + addresses.get(0).getAdminArea() + ", " + addresses.get(0).getCountryName());
-                            //Toast.makeText(getApplicationContext(), "Address:- " + addresses.get(0).getFeatureName() + addresses.get(0).getAdminArea() + addresses.get(0).getLocality(), Toast.LENGTH_LONG).show();
-                        }
+            Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+            try {
+                List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+                if (addresses.isEmpty()) {
+                    mainActivityTexInput.setText("Waiting for Location");
+                }else {
+                    if (addresses.size() > 0) {
+                        mainActivityTexInput.setText(addresses.get(0).getFeatureName() + ", " + addresses.get(0).getLocality() +", " + addresses.get(0).getAdminArea() + ", " + addresses.get(0).getCountryName());
                     }
-                }catch (IOException error){
-                    Log.d(TAG,error.toString());
                 }
+            }catch (IOException error){
+                Log.d(TAG,error.toString());
+            }
     }
 
-    private void savePrefMarker(LatLng latLng){
-
-        myMapList.add(latLng.toString());
+    private void savePrefMarker(LatLng latLng,String message){
+        appLocationList.add(latLng.toString());
+        appMessageList.add(message);
         //Before save the new info clearing the editor fixed some issues
         editor.clear();
-        editor.putStringSet(sharedPrefKey,myMapList);
+        editor.putStringSet(sharedPrefKeyLocation, appLocationList);
+        editor.apply();
+        editor.putStringSet(sharedPrefKeyMessages, appMessageList);
         //Apply the changes to the editor
         editor.apply();
     }
@@ -214,7 +226,6 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
             }else {
                 if (addresses.size() > 0) {
                     mainActivityTexInput.setText(addresses.get(0).getFeatureName() + ", " + addresses.get(0).getLocality() +", " + addresses.get(0).getAdminArea() + ", " + addresses.get(0).getCountryName());
-                    //Toast.makeText(getApplicationContext(), "Address:- " + addresses.get(0).getFeatureName() + addresses.get(0).getAdminArea() + addresses.get(0).getLocality(), Toast.LENGTH_LONG).show();
                 }
             }
         }catch (IOException error){
@@ -232,16 +243,18 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
             createPolygonFlag =false;
             button.setText("Start Polygon");
             if(polygonList.size()>0){
+                listPolyList.add(polygonList);
                 createPolygonFromMarkers();
             }
         }else{
             //This flag allows to not saving the long press markers and start to fill
             // the markers for the polygon list in the addMarkersToMap function
             createPolygonFlag =true;
-
-            //Clear the list so the user creates a new polygon
+            Toast.makeText(getContext(),
+                    "Touch long to mark each side of the Polygon", Toast.LENGTH_LONG)
+                    .show();
+            //Empty the list for the next polygon
             polygonList.clear();
-
             button.setText("End Polygon");
         }
     }
@@ -250,10 +263,22 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     //https://stackoverflow.com/questions/27261670/convert-string-to-latlng
     public void addSavedMarkers() {
 
-        Iterator<String> iterator=myMapList.iterator();
+        Iterator<String> iteratorLocation= appLocationList.iterator();
+        Iterator<String> iteratorMessage= appMessageList.iterator();
+        Log.d(TAG,"Location Size:"+appLocationList.size());
+        Log.d(TAG,"Message Size:"+appMessageList.size());
+        //If because fo some issue one list if different size of the other,
+        //Clear both, some problem because implementing the second list at different
+        //development phases
+        if(appLocationList.size()!=appMessageList.size()){
+            appLocationList.clear();
+            appMessageList.clear();
+        }
 
-        while(iterator.hasNext()){
-            String mymapValues=iterator.next();
+        Log.d(TAG,"ENTER Add Saved Markers");
+        while(iteratorLocation.hasNext() && iteratorMessage.hasNext()){
+            Log.d(TAG,"ADD Saved Markers");
+            String mymapValues=iteratorLocation.next();
             mymapValues=mymapValues.replace("lat/lng: (","");
             mymapValues=mymapValues.replace(")","");
 
@@ -261,14 +286,14 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
             double latitude = Double.parseDouble(latlong[0]);
             double longitude = Double.parseDouble(latlong[1]);
 
-            addMarkersToMap(new LatLng(latitude, longitude));
+            addMarkersToMap(new LatLng(latitude, longitude),iteratorMessage.next());
         }
     }
 
+    //Create functions with different signatures to avoid repeat code
     public void addMarkersToMap(LatLng latLng){
-
+        //Get Address of the market
         String title =getStreetFromGoogleMaps(latLng);
-
         createAndAddMarker(latLng,title);
     }
 
@@ -276,6 +301,7 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
         createAndAddMarker(latLng,info);
     }
 
+    //
     private void createAndAddMarker(LatLng latLng,String info){
         MarkerOptions markerOptions=new MarkerOptions().position(latLng).title(info);
         mMap.addMarker(markerOptions);
@@ -285,7 +311,8 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
             addMarkerToPolygonList(markerOptions);
         }else{
             //Save marker in pref
-            savePrefMarker(latLng);
+            savePrefMarker(latLng,info);
+            Log.d(TAG,"Save Marker");
         }
     }
 
@@ -316,16 +343,20 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     //https://developers.google.com/maps/documentation/android-sdk/shapes
     private void createPolygonFromMarkers(){
         //Clear the Map, is needed to clear the screen of old drawings
-        mMap.clear();
+
         //After clear we add again the saved markers
         addSavedMarkers();
-        //Draw the polygon in the map
-        PolygonOptions polygonOptions=new PolygonOptions();
-        polygonOptions.addAll(polygonList).fillColor(Color.argb(50,50,50,50));
-        mMap.addPolygon(polygonOptions);
+        Log.d(TAG,"Poly List:"+listPolyList.size());
+        for(int i=0;i<listPolyList.size();i++) {
+            Log.d(TAG,"Draw Area");
+            //Draw the polygon in the map
+            PolygonOptions polygonOptions = new PolygonOptions();
+            polygonOptions.addAll(listPolyList.get(i)).fillColor(Color.argb(50, 50, 50, 50));
+            mMap.addPolygon(polygonOptions);
 
-        //After drawing do the final process of calculating the area and the centroid
-        calculateAreaAndCentroid(polygonOptions.getPoints());
+            //After drawing do the final process of calculating the area and the centroid
+            calculateAreaAndCentroid(polygonOptions.getPoints());
+        }
     }
 
     //https://stackoverflow.com/questions/2115758/how-do-i-display-an-alert-dialog-on-android
@@ -335,10 +366,10 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
         new AlertDialog.Builder(getContext()).setTitle("Clear Markers").setMessage("Sure?, Delete All the markers?").
                 setPositiveButton("YES", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
-                polygonList.clear();
+                listPolyList.clear();
                 mMap.clear();
-                myMapList.clear();
-                editor.putStringSet(sharedPrefKey,myMapList);
+                appLocationList.clear();
+                editor.putStringSet(sharedPrefKeyLocation, appLocationList);
                 editor.apply();
             }
         })    // A null listener allows the button to dismiss the dialog and take no further action.
@@ -350,10 +381,7 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
     //https://en.wikipedia.org/wiki/Centroid
     //https://en.m.wikipedia.org/wiki/Shoelace_formula
     private void calculateAreaAndCentroid(List<LatLng> latLngsList){
-        /*double area=0;
-        double sum=0;
-        double centroidX=0;
-        double centroidY=0;*/
+
         double centroidXAvg=0;
         double centroidYAvg=0;
 
@@ -363,29 +391,17 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
         for(int i=0;i<latLngsList.size()-1;i++){
 
             double x1=latLngsList.get(i).latitude;
-            //double y1=latLngsList.get(i+1).longitude;
-            //double x2=latLngsList.get(i+1).latitude;
             double y2=latLngsList.get(i).longitude;
 
-            //sum+=x1*y1-x2*y2;
-            //centroidX+=(x1+x2)*((x1*y1)-(x2*y2));
-            //centroidY+=(y2+y1)*((x1*y1)-(x2*y2));
             centroidXAvg+=x1;
             centroidYAvg+=y2;
         }
-
-       /* //http://www.longitudestore.com/how-big-is-one-gps-degree.html
-        //One degree of latitude is in average 1->110.574f km
-        double scaleCorrection=110.574;
-        area=sum/2;
-        centroidX=(centroidX/(area*6));
-        centroidY=(centroidY/(area*6));
-        addMarkersToMap(centroidLatLng,(Math.round(area*scaleCorrection))+" KM^2");*/
 
         centroidXAvg=centroidXAvg/(latLngsList.size()-1);
         centroidYAvg=centroidYAvg/(latLngsList.size()-1);
 
         //The marker with the centroid is added after
+        LatLng centroidLatLng;
         centroidLatLng = new LatLng(centroidXAvg,centroidYAvg);
 
         Double sphereArea=SphericalUtil.computeArea(latLngsList);
