@@ -118,6 +118,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     draw_polygon = true;
                     polygonButton.setText(R.string.end_polygon);
                 }
+
                 else {
                     draw_polygon = false;
                     polygonButton.setText(R.string.start_polygon);
@@ -139,17 +140,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         // Help from: Olli Singler :)
                         double area = SphericalUtil.computeArea(MarkerList);
 
+                        if (area >= 100000) {
+                            area = area / 1000000;
+                        }
+
                         // not working
                         // mMap.addMarker(new MarkerOptions().position(MarkerList.get(0)).title("Area: " +area));
-
 
                         MarkerList.clear();
                     }
                 }
             }
         });
-
-
     }
 
 
