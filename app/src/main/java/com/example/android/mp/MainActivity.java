@@ -28,6 +28,8 @@ import com.google.maps.android.SphericalUtil;
 
 import java.util.ArrayList;
 
+//Team Member Names: Ryan DeBattista, Oliver Singler
+
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener {
 
     private static final String COARSE_LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
