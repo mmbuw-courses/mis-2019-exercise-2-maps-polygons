@@ -117,7 +117,6 @@ public class MapsActivity extends Fragment implements OnMapReadyCallback, Google
 
             //If there is no permissions ask for permissions
             ActivityCompat.requestPermissions(getActivity(),new String[]{Manifest.permission.ACCESS_FINE_LOCATION},1);
-            super.onPause();
             }else {
 
             //If there is permissions find the current location
