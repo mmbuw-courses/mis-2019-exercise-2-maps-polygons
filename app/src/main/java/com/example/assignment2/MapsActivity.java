@@ -2,6 +2,7 @@ package com.example.assignment2;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -19,8 +20,13 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.maps.android.SphericalUtil;
 
+import java.util.ArrayList;
 
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, LocationListener
@@ -30,7 +36,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 0000;
     private GoogleMap mMap;
     protected LocationManager locationManager;
-    protected LocationListener locationListener;
     protected String latitude, longitude;
     protected boolean gps_enabled, network_enabled;
     private boolean mLocationPermissionGranted = false;
@@ -38,6 +43,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Button polygonButton;
     private boolean draw_polygon = false;
     private int polygon_markers = 0;
+    private ArrayList<LatLng> MarkerList = new ArrayList<LatLng> ();
 
 
 
@@ -103,18 +109,42 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         // Source: https://developer.android.com/reference/android/widget/Button
         polygonButton = findViewById(R.id.button);
-        polygonButton.setText("Start Polygon");
+        polygonButton.setText(R.string.start_polygon);
         polygonButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // what happens when you click the button
+
                 if (!draw_polygon) {
                     draw_polygon = true;
-                    polygonButton.setText("End Polygon");
+                    polygonButton.setText(R.string.end_polygon);
                 }
                 else {
                     draw_polygon = false;
-                    polygonButton.setText("Start Polygon");
+                    polygonButton.setText(R.string.start_polygon);
+
+                    if (MarkerList.size() >= 3) {
+
+                        // Source: https://developers.google.com/maps/documentation/android-sdk/shapes
+                        PolygonOptions rectOptions = new PolygonOptions();
+                        rectOptions.fillColor(Color.argb (80, 100, 100, 100));
+
+
+                        for (int i = 0; i < MarkerList.size(); i++) {
+                            rectOptions.add(MarkerList.get(i));
+
+                        }
+                        Polygon polygon = mMap.addPolygon(rectOptions);
+
+                        // Source: https://developers.google.com/maps/documentation/android-sdk/utility/
+                        // Help from: Olli Singler :)
+                        double area = SphericalUtil.computeArea(MarkerList);
+
+                        // not working 
+                        // mMap.addMarker(new MarkerOptions().position(MarkerList.get(0)).title("Area: " +area));
+
+
+                        MarkerList.clear();
+                    }
                 }
             }
         });
@@ -163,6 +193,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 editor.putString("Position", latLng.toString());
                 editor.apply();
 
+                if (draw_polygon == true) {
+                    MarkerList.add(latLng);
+
+
+                }
             }
         });
 
