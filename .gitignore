@@ -1,6 +1,5 @@
 # Built application files
-*.apk
-*.ap_
+
 
 # Files for the ART/Dalvik VM
 *.dex
@@ -26,7 +25,7 @@ proguard/
 # Log Files
 *.log
 
-# Android Studio Navigation editor temp files
+# Android Studio Navigation edit_object temp files
 .navigation/
 
 # Android Studio captures folder

@@ -1,0 +1,9 @@
+List of Members
+
+First Student: Nguyen Hung Thang
+Number: 119533
+
+Second Student: Dang Thi Hoang Yen
+Number: 119433
+
+Path of compiled APK file: \mis-2019-exercise-2-maps-polygons\app\release
