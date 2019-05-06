@@ -1,0 +1,112 @@
+DROID INFO BERICHT
+
+
+GERÄT
+Modell: LG-H870 (lucye_global_com)
+Hersteller: LGE
+Baseband-Version: MPSS.TH.2.0.1.c3.1-00028-M8996FAAAANAZM-1.167449.1.182474.1
+RIL-Version: Qualcomm RIL 1.0
+Build-Nummer: OPR1.170623.032
+Build-Fingerprint: lge/lucye_global_com/lucye:8.0.0/OPR1.170623.032/1901023022ea9:user/release-keys
+Bootloader: unknown
+Java VM: ART 2.1.0
+OS-Version: O (8.0.0)
+SDK: 26
+
+DISPLAY
+Auflösung: 1440x2880 pixels
+Softwaredichte: 560 dpi
+Erneuerungsrate: 60 Hz
+
+PROZESSOR
+CPU-Architektur: ARMv8-A
+Board: msm8996
+Chipsatz: Qualcomm Technologies, Inc MSM8996pro
+Kerne: 4
+Taktungsgeschwindigkeit: 2188 MHz - 2342 MHz
+Anleitungssets: arm64-v8a
+CPU-Features: fp asimd evtstrm aes pmull sha1 sha2 crc32
+CPU-Regulator: interactive
+Kernel-Version: 3.18.71-perf+
+Kernel-Architektur: aarch64
+
+GRAFIKEN
+Renderer: Adreno (TM) 530
+Verkäufer: Qualcomm
+OpenGL-Version: OpenGL ES 3.2
+
+RAM
+Gesamt: 3777 MB
+Java Heap: 256 MB
+
+SPEICHER
+Intern: 22,4 GB
+EXTERN: Nicht erkannt
+
+FEATURES
+Bluetooth: Ja
+Bluetooth LE: Ja
+GPS: Ja
+NFC: Ja
+USB Zubehörteil: Ja
+WiFi: Ja
+WiFi Direct: Ja
+
+AKKU
+Technologie: Li-ion
+Gesundheit: Gut
+
+SENSOREN
+LGE Accelerometer
+LGE Accelerometer Uncalibrated
+LGE Magnetometer
+LGE Magnetometer Uncalibrated
+LGE Gyroscope
+LGE Gyroscope Uncalibrated
+LGE Proximity
+LGE Knock-on Proximity Sensor
+LGE PocketDetection Sensor
+LGE Virtual Proximity Sensor
+LGE WakeUp Light Sensor
+Health Activity Pattern Sensor
+LGE Light
+BMP280 Pressure
+LGE Accelerometer -Wakeup Secondary
+LGE Accelerometer Uncalibrated -Wakeup Secondary
+LGE Magnetometer -Wakeup Secondary
+LGE Magnetometer Uncalibrated -Wakeup Secondary
+LGE Gyroscope -Wakeup Secondary
+LGE Gyroscope Uncalibrated -Wakeup Secondary
+LGE Proximity -Non Wakeup Secondary
+LGE Light -Wakeup Secondary
+BMP280 Pressure -Wakeup Secondary
+LGE Gravity Sensor
+LGE Linear Acceleration Sensor
+LGE Rotation Vector Sensor
+LGE Step Detector Sensor
+LGE Step Counter Sensor
+LGE Significant Motion Detector Sensor
+LGE Game Rotation Vector Sensor
+LGE GeoMagnetic Rotation Vector Sensor
+LGE Orientation Sensor
+LGE Tilt Detector Sensor
+Phone Tilt Gesture
+Gravity -Wakeup Secondary
+Linear Acceleration -Wakeup Secondary
+Rotation Vector -Wakeup Secondary
+Step Detector -Wakeup Secondary
+Step Counter -Wakeup Secondary
+Game Rotation Vector -Wakeup Secondary
+GeoMagnetic Rotation Vector -Wakeup Secondary
+Orientation -Wakeup Secondary
+LGE Absolute Motion Detector Sensor
+LGE Relative Motion Detector Sensor
+LGE Modified PAM Sensor
+LG Motion Accel
+LGE Coarse Motion Classifier Sensor
+LGE Absolute Motion Detector Sensor - Wake Up Secondary
+LGE OnHand Detector
+LGE PickUp Sensor
+
+
+Erstellt von Droid Info
