@@ -1,5 +1,19 @@
+<<<<<<< HEAD
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+=======
 # Built application files
-*.apk
 *.ap_
 
 # Files for the ART/Dalvik VM
@@ -53,3 +67,4 @@ google-services.json
 freeline.py
 freeline/
 freeline_project_description.json
+>>>>>>> 6d99ccedf44c07d2b10749abb50249ad5b31c819
